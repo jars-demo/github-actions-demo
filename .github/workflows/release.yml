@@ -1,0 +1,42 @@
+# Chapter 09: releases. Pushing a tag like v0.2.0 checks that it matches package.json, runs the
+# tests, packs the backend and publishes a GitHub release with generated notes.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Publish the release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+      - name: Check the tag matches package.json
+        working-directory: backend
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="v$(node -p "require('./package.json').version")"
+          if [ "$version" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match package.json version $version"
+            exit 1
+          fi
+      - name: Test
+        run: npm test
+        working-directory: backend
+      - name: Pack
+        run: npm pack
+        working-directory: backend
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" backend/*.tgz --verify-tag --generate-notes --title "Pulse $TAG"

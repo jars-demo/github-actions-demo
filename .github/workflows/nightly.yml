@@ -1,0 +1,23 @@
+# Chapter 07: schedules and manual runs. Every night, test against the newest Node.js so breakage
+# shows up before anyone upgrades. It can also be started by hand with a version to try.
+name: Nightly
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # 03:17 UTC; avoid :00, when GitHub's schedulers are busiest
+  workflow_dispatch:
+    inputs:
+      node-version:
+        description: Node.js version to test
+        type: choice
+        options: ['node', 'lts/*', '24', '22']
+        default: 'node'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      node-version: ${{ inputs.node-version || 'node' }}

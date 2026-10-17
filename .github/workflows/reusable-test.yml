@@ -1,0 +1,27 @@
+# Chapter 08: a reusable workflow. Other workflows call it with `uses:` and pass a Node version.
+name: Reusable backend test
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: The Node.js version to test on.
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test on Node ${{ inputs.node-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Test
+        run: npm test
+        working-directory: backend

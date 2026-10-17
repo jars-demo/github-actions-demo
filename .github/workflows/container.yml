@@ -1,0 +1,62 @@
+# Chapter 10: containers. Every change builds and smoke-tests the image. Only a version tag
+# publishes it to GitHub Container Registry, from a separate job that alone may write packages.
+name: Container
+
+on:
+  pull_request:
+    paths: ['backend/**', '.github/workflows/container.yml']
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/container.yml']
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the image
+        run: docker build -t pulse:ci backend
+      - name: Smoke test
+        env:
+          COMMIT: ${{ github.sha }}
+        run: |
+          docker run -d --name pulse -p 3000:3000 -e PULSE_COMMIT="$COMMIT" pulse:ci
+          for i in $(seq 1 20); do curl -fs localhost:3000/health && break; sleep 1; done
+          curl -fs localhost:3000/api/version | grep -q '"name":"pulse"'
+          test "$(docker exec pulse whoami)" = node
+
+  publish:
+    name: Publish to GHCR
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build, tag and push
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+          OWNER: ${{ github.repository_owner }}
+          VERSION: ${{ github.ref_name }}
+          SOURCE: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          image="ghcr.io/${OWNER,,}/pulse"
+          echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          docker build --label "org.opencontainers.image.source=$SOURCE" \
+            -t "$image:$VERSION" -t "$image:latest" backend
+          docker push "$image:$VERSION"
+          docker push "$image:latest"

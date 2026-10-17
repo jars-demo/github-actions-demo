@@ -1,0 +1,23 @@
+# Chapter 08: a composite action. Every backend job starts with the same two steps, so they live
+# here once instead of being copied into each workflow.
+name: Set up the backend
+description: Install Node.js with the npm cache, then the backend's exact locked dependencies.
+
+inputs:
+  node-version:
+    description: The Node.js version to use, for example 22, 24, lts/* or node (the newest).
+    required: false
+    default: '22'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: backend/package-lock.json
+    - name: Install dependencies
+      run: npm ci
+      shell: bash
+      working-directory: backend

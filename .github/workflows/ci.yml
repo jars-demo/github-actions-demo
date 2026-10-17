@@ -1,0 +1,68 @@
+# Chapters 04 to 06: continuous integration for the backend. Types and tests on every push and
+# pull request, across Node versions and operating systems, then one build kept as an artifact.
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/actions/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/actions/**'
+      - '.github/workflows/ci.yml'
+
+# Read-only by default. A job that needs more asks for it by name.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node: ['22', '24']
+        include:
+          - os: windows-latest
+            node: '22'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Type check
+        run: npm run typecheck
+        working-directory: backend
+      - name: Test
+        run: npm test
+        working-directory: backend
+
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+      - name: Build
+        run: npm run build
+        working-directory: backend
+      - name: Keep the build for 7 days
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pulse-dist
+          path: backend/dist
+          retention-days: 7
