@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: Pulse
+  version: 0.1.0
+  summary: A tiny status API used in the GitHub Actions workshop.
+paths:
+  /health:
+    get:
+      summary: Liveness check.
+      responses:
+        '200':
+          description: The service is up.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: ok }
+  /api/version:
+    get:
+      summary: The version and the commit this build came from.
+      responses:
+        '200':
+          description: Build information.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Info' }
+  /api/greet:
+    get:
+      summary: Greets someone by name.
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: 1 to 40 letters, numbers, spaces, dots, apostrophes or hyphens.
+          schema: { type: string, minLength: 1, maxLength: 40 }
+      responses:
+        '200':
+          description: A greeting.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string, examples: ['Hello, Ada!'] }
+        '400':
+          description: The name is missing or not allowed (code INVALID_NAME).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+components:
+  schemas:
+    Info:
+      type: object
+      required: [name, version, commit]
+      properties:
+        name: { type: string, const: pulse }
+        version: { type: string, examples: ['0.1.0'] }
+        commit:
+          type: string
+          description: The first 12 characters of the commit, or "local" outside CI.
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, enum: [NOT_FOUND, METHOD_NOT_ALLOWED, INVALID_NAME] }
+            message: { type: string }

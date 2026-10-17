@@ -1,0 +1,8 @@
+# Run Pulse locally in Docker: docker compose up --build
+services:
+  pulse:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      PULSE_COMMIT: local-compose
