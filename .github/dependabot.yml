@@ -14,9 +14,23 @@ updates:
       interval: weekly
     cooldown:
       default-days: 14
+    ignore:
+      # Majors are planned upgrades, not weekly chores. @types/node follows the Node.js we run (22).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
     cooldown:
       default-days: 14
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # jsdom 30 needs Node.js 22.22 or newer; stay on 28 until the runtime moves.
+      - dependency-name: jsdom
+        update-types: ['version-update:semver-major']

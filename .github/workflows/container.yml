@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths: ['backend/**', '.github/workflows/container.yml']
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: read

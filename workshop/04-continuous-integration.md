@@ -23,9 +23,11 @@ on:
       - 'backend/**'
       - '.github/actions/**'
       - '.github/workflows/ci.yml'
+  workflow_dispatch:
 ```
 
 - `push` to `main`, and every `pull_request`, so a change is tested before and after it merges.
+- `workflow_dispatch` adds a **Run workflow** button, handy to re-run CI on demand.
 - `paths` skips the run when nothing it tests changed, like an edit to the workshop text.
 
 ## Least privilege
