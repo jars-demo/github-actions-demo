@@ -1,0 +1,22 @@
+# Dependencies and builds
+node_modules/
+dist/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+*.tgz
+backend/status-page/
+
+# Test output
+test-results/
+playwright-report/
+coverage/
+
+# Secrets and local files
+.env
+.env.*
+!.env.example
+.vercel
+.DS_Store
+Thumbs.db
